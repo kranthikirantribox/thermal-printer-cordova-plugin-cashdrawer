@@ -3,6 +3,7 @@ package de.paystory.thermal_printer;
 import static android.app.PendingIntent.FLAG_MUTABLE;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -25,6 +26,7 @@ import com.dantsu.escposprinter.connection.bluetooth.BluetoothPrintersConnection
 import com.dantsu.escposprinter.connection.tcp.TcpConnection;
 import com.dantsu.escposprinter.connection.usb.UsbConnection;
 import com.dantsu.escposprinter.connection.usb.UsbConnections;
+import com.dantsu.escposprinter.connection.usb.UsbPrintersConnections;
 import com.dantsu.escposprinter.exceptions.EscPosConnectionException;
 import com.dantsu.escposprinter.textparser.PrinterTextParserImg;
 
@@ -40,11 +42,14 @@ import java.util.Objects;
 
 import android.os.Build;
 import android.content.pm.PackageManager;
+import android.util.Log;
+
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import org.apache.cordova.CordovaInterface;
 
 public class ThermalPrinterCordovaPlugin extends CordovaPlugin {
+    private static final String ACTION_USB_PERMISSION = "io.ionic.starter.USB_PERMISSION";
     private final HashMap<String, DeviceConnection> connections = new HashMap<>();
 
     public static final int PERMISSION_BLUETOOTH = 1;
@@ -75,6 +80,8 @@ public class ThermalPrinterCordovaPlugin extends CordovaPlugin {
                     ThermalPrinterCordovaPlugin.this.requestUSBPermissions(callbackContext, args.getJSONObject(0));
                 } else if (action.equals("bitmapToHexadecimalString")) {
                     ThermalPrinterCordovaPlugin.this.bitmapToHexadecimalString(callbackContext, args.getJSONObject(0));
+                } else if (action.equals("requestAllPermissions")) {
+                    ThermalPrinterCordovaPlugin.this.requestAllPermissions(callbackContext, args.getJSONObject(0));
                 }
             } catch (JSONException exception) {
                 callbackContext.error(exception.getMessage());
@@ -83,6 +90,102 @@ public class ThermalPrinterCordovaPlugin extends CordovaPlugin {
 
         return true;
     }
+
+    private void requestAllPermissions(CallbackContext callbackContext, JSONObject jsonObject) throws JSONException {
+        Boolean status = printUsb();
+        Log.e("9999999999999999999", String.valueOf(status));
+        if (status == true) {
+            callbackContext.success("USB manager permission granted");
+        } else if (status == false) {
+            callbackContext.error("USB manager or device not available");
+        }
+    }
+
+    private final BroadcastReceiver usbReceiver = new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (ACTION_USB_PERMISSION.equals(action)) {
+                synchronized (this) {
+                    UsbManager usbManager = (UsbManager) cordova.getActivity().getSystemService(Context.USB_SERVICE);
+                    UsbDevice usbDevice = (UsbDevice) intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                    if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+                        if (usbManager != null && usbDevice != null) {
+                            // YOUR PRINT CODE HERE
+                            Log.e("Tesing_Module", "Working");
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    public boolean printUsb() {
+        UsbConnection usbConnection = UsbPrintersConnections.selectFirstConnected(cordova.getContext());
+        UsbManager usbManager = (UsbManager) cordova.getActivity().getSystemService(Context.USB_SERVICE);
+
+        if (usbConnection != null && usbManager != null) {
+            PendingIntent permissionIntent = PendingIntent.getBroadcast(
+                    cordova.getContext(),
+                    0,
+                    new Intent(ACTION_USB_PERMISSION),
+                    android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE
+                            : 0);
+            IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
+            cordova.getActivity().registerReceiver(usbReceiver, filter);
+
+            // Request permission
+            usbManager.requestPermission(((UsbConnection) usbConnection).getDevice(), permissionIntent);
+            return true;
+        }
+
+        // Return a default value or indicate that the permission result is pending
+        return false;
+    }
+
+    // private void requestAllPermissions(CallbackContext callbackContext,
+    // JSONObject data) throws JSONException {
+    // UsbManager usbManager = (UsbManager)
+    // cordova.getActivity().getSystemService(Context.USB_SERVICE);
+    // UsbDevice usbDevice = null; // Replace with your USB device or device
+    // selection logic
+    //
+    // if (usbManager == null || usbDevice == null) {
+    // // Handle the case where the USB manager or device is not available.
+    // callbackContext.error("USB manager or device not available.");
+    // return;
+    // }
+    //
+    // String permissionAction = "io.ionic.starter.USB_PERMISSION"; // Change to
+    // your app's package name
+    //
+    // PendingIntent permissionIntent = PendingIntent.getBroadcast(
+    // cordova.getActivity().getBaseContext(),
+    // 0,
+    // new Intent(permissionAction),
+    // PendingIntent.FLAG_IMMUTABLE);
+    //
+    // IntentFilter filter = new IntentFilter(permissionAction);
+    // cordova.getActivity().registerReceiver(new BroadcastReceiver() {
+    // @Override
+    // public void onReceive(Context context, Intent intent) {
+    // String action = intent.getAction();
+    // if (action != null && action.equals(permissionAction)) {
+    // synchronized (this) {
+    // if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+    // // USB permission granted
+    // callbackContext.success("USB permission granted");
+    // } else {
+    // // USB permission denied
+    // callbackContext.error("USB permission denied");
+    // }
+    // }
+    // }
+    // }
+    // }, filter);
+    //
+    // // Request USB permission
+    // usbManager.requestPermission(usbDevice, permissionIntent);
+    // }
 
     private void requestBTPermissions(CallbackContext callbackContext, JSONObject data) throws JSONException {
         try {
@@ -255,6 +358,7 @@ public class ThermalPrinterCordovaPlugin extends CordovaPlugin {
         }
     }
 
+    @SuppressLint("MissingPermission")
     private void listPrinters(CallbackContext callbackContext, JSONObject data) throws JSONException {
         JSONArray printers = new JSONArray();
 
@@ -396,6 +500,7 @@ public class ThermalPrinterCordovaPlugin extends CordovaPlugin {
         callbackContext.success();
     }
 
+    @SuppressLint("MissingPermission")
     private DeviceConnection getDevice(CallbackContext callbackContext, String type, String id, String address,
             int port) {
         String hashKey = type + "-" + id;

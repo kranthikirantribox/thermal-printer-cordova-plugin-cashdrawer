@@ -5,7 +5,7 @@
     <description>Cordova wrapper for ESC/POS Thermal Printer library</description>
     <license>Apache 2.0</license>
     <keywords>cordova,android,thermal,printer,esc,pos,esc/pos</keywords>
-    <js-module src="www/thermal-printer.js" name="ThermalPrinterPlugin">
+    <js-module src="www/thermal-printer.js" name="ThermalPrinterPluginCustomiized">
         <clobbers target="ThermalPrinter" />
     </js-module>
     <platform name="android">
