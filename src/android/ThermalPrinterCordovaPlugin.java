@@ -4,11 +4,14 @@ import static android.app.PendingIntent.FLAG_MUTABLE;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.AlertDialog;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Bitmap;
@@ -45,6 +48,7 @@ import android.content.pm.PackageManager;
 import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 import org.apache.cordova.CordovaInterface;
 
@@ -101,7 +105,10 @@ public class ThermalPrinterCordovaPlugin extends CordovaPlugin {
         }
     }
 
-    private final BroadcastReceiver usbReceiver = new BroadcastReceiver() {
+  
+
+
+  private final BroadcastReceiver usbReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (ACTION_USB_PERMISSION.equals(action)) {
@@ -119,73 +126,51 @@ public class ThermalPrinterCordovaPlugin extends CordovaPlugin {
         }
     };
 
-    public boolean printUsb() {
-        UsbConnection usbConnection = UsbPrintersConnections.selectFirstConnected(cordova.getContext());
-        UsbManager usbManager = (UsbManager) cordova.getActivity().getSystemService(Context.USB_SERVICE);
+  public boolean printUsb() {
+    UsbConnection usbConnection = UsbPrintersConnections.selectFirstConnected(cordova.getContext());
+    UsbManager usbManager = (UsbManager) cordova.getActivity().getSystemService(Context.USB_SERVICE);
 
-        if (usbConnection != null && usbManager != null) {
-            PendingIntent permissionIntent = PendingIntent.getBroadcast(
-                    cordova.getContext(),
-                    0,
-                    new Intent(ACTION_USB_PERMISSION),
-                    android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE
-                            : 0);
-            IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
-            cordova.getActivity().registerReceiver(usbReceiver, filter);
+    if (usbConnection != null && usbManager != null) {
+      PendingIntent permissionIntent = PendingIntent.getBroadcast(
+        cordova.getContext(),
+        0,
+        new Intent(ACTION_USB_PERMISSION),
+        android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0
+      );
 
-            // Request permission
-            usbManager.requestPermission(((UsbConnection) usbConnection).getDevice(), permissionIntent);
-            return true;
+      // Display a custom dialog to explain the USB permission request on the main thread
+      cordova.getActivity().runOnUiThread(new Runnable() {
+        @Override
+        public void run() {
+          AlertDialog.Builder builder = new AlertDialog.Builder(cordova.getContext());
+          builder.setTitle("USB Permission Request");
+          builder.setMessage("We need permission to access the USB device for printing. Please grant the permission.");
+          builder.setPositiveButton("Grant Permission", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+              // Request permission
+              usbManager.requestPermission(((UsbConnection) usbConnection).getDevice(), permissionIntent);
+            }
+          });
+          builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+              // Handle the user's choice to cancel the request
+            }
+          });
+          builder.create().show();
         }
+      });
 
-        // Return a default value or indicate that the permission result is pending
-        return false;
+      return true;
     }
 
-    // private void requestAllPermissions(CallbackContext callbackContext,
-    // JSONObject data) throws JSONException {
-    // UsbManager usbManager = (UsbManager)
-    // cordova.getActivity().getSystemService(Context.USB_SERVICE);
-    // UsbDevice usbDevice = null; // Replace with your USB device or device
-    // selection logic
-    //
-    // if (usbManager == null || usbDevice == null) {
-    // // Handle the case where the USB manager or device is not available.
-    // callbackContext.error("USB manager or device not available.");
-    // return;
-    // }
-    //
-    // String permissionAction = "io.ionic.starter.USB_PERMISSION"; // Change to
-    // your app's package name
-    //
-    // PendingIntent permissionIntent = PendingIntent.getBroadcast(
-    // cordova.getActivity().getBaseContext(),
-    // 0,
-    // new Intent(permissionAction),
-    // PendingIntent.FLAG_IMMUTABLE);
-    //
-    // IntentFilter filter = new IntentFilter(permissionAction);
-    // cordova.getActivity().registerReceiver(new BroadcastReceiver() {
-    // @Override
-    // public void onReceive(Context context, Intent intent) {
-    // String action = intent.getAction();
-    // if (action != null && action.equals(permissionAction)) {
-    // synchronized (this) {
-    // if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-    // // USB permission granted
-    // callbackContext.success("USB permission granted");
-    // } else {
-    // // USB permission denied
-    // callbackContext.error("USB permission denied");
-    // }
-    // }
-    // }
-    // }
-    // }, filter);
-    //
-    // // Request USB permission
-    // usbManager.requestPermission(usbDevice, permissionIntent);
-    // }
+    // Return a default value or indicate that the permission result is pending
+    return false;
+  }
+
+
+
 
     private void requestBTPermissions(CallbackContext callbackContext, JSONObject data) throws JSONException {
         try {
