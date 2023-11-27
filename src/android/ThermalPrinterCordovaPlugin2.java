@@ -54,10 +54,7 @@ import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 import org.apache.cordova.CordovaInterface;
 
-import com.imin.library.IminSDKManager;
-import com.imin.library.SystemPropManager;
-
-public class ThermalPrinterCordovaPlugin extends CordovaPlugin{
+public class ThermalPrinterCordovaPlugin extends CordovaPlugin {
     private static final String ACTION_USB_PERMISSION = "io.ionic.starter.USB_PERMISSION";
     private final HashMap<String, DeviceConnection> connections = new HashMap<>();
 
@@ -103,10 +100,26 @@ public class ThermalPrinterCordovaPlugin extends CordovaPlugin{
     }
 
     private void requestCashDrawer(CallbackContext callbackContext, JSONObject jsonObject) throws JSONException {
-        CashDrawerController cashDrawerController = new CashDrawerController(cordova.getContext());
-        cashDrawerController.openCashDrawer();
-        IminSDKManager.opencashBox();
-        SystemPropManager.getBrand();
+
+        try {
+
+            // Create a DeviceConnection (Assuming you have it)
+            // DeviceConnection deviceConnection = new YourDeviceConnection(); // Replace
+            // with your actual DeviceConnection implementation
+            UsbConnection usbConnection = UsbPrintersConnections.selectFirstConnected(cordova.getContext());
+
+            // Create an instance of your custom class
+            CustomEscPosPrinterCommands customCommands = new CustomEscPosPrinterCommands(usbConnection);
+
+            // Call the openCashBox method
+            customCommands.openCashBox();
+            Log.e("11111111111111", "Successful");
+            // Handle any exceptions that may occur
+        } catch (EscPosConnectionException e) {
+            Log.e("11111111111111", String.valueOf(e));
+            // Handle the exception
+        }
+
     }
 
     private void requestAllPermissions(CallbackContext callbackContext, JSONObject jsonObject) throws JSONException {

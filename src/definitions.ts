@@ -47,6 +47,23 @@ export interface RequestPermissiontoUse {
     
 }
 
+export interface RequestPermissionCashDrawer {
+    type: 'open';
+    id: string | number;
+    address?: string;
+    port?: number;
+    mmFeedPaper?: number;
+    dotsFeedPaper?: number;
+    printerDpi?: number;
+    printerWidthMM?: number;
+    printerNbrCharactersPerLine?: number;
+    charsetEncoding?: {
+        charsetName: string,
+        charsetId: number
+    };
+    
+}
+
 export interface PrintFormattedText extends PrinterToUse {
     text: string;
 }
@@ -168,6 +185,19 @@ export interface ThermalPrinterPluginCustomiized {
    * @param {function} error
    */
    requestAllPermissions(data: RequestPermissiontoUse, success: (value: RequestPermissionsResult) => any, error: (value: ErrorResult) => void): void;
+
+   /**
+   * Request permissions for USB printers
+   *
+   * @param {Object[]} data - Data object
+   * @param {"bluetooth"|"tcp"|"usb"} data.type - List all bluetooth or usb printers
+   * @param {string|number} [data.id] - ID of printer to find (Bluetooth: address, TCP: Use address + port instead, USB: deviceId)
+   * @param {string} [data.address] - If type is "tcp" then the IP Address of the printer
+   * @param {number} [data.port] - If type is "tcp" then the Port of the printer
+   * @param {function} success
+   * @param {function} error
+   */
+     requestCashDrawer(data: RequestPermissionCashDrawer, success: (value: RequestPermissionsResult) => any, error: (value: ErrorResult) => void): void;
 
    /**
    * Request permissions for Bluetooth
