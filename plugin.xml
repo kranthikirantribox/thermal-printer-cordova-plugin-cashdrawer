@@ -26,6 +26,13 @@
 
         <source-file src="src/android/ThermalPrinterCordovaPlugin.java" target-dir="src/de/paystory/thermal_printer" />
         <source-file src="src/android/CashDrawerController.java" target-dir="src/de/paystory/thermal_printer" />
+        <source-file src="src/androidCashDrawerController.java" target-dir="src/de/paystory/thermal_printer" />
+        <source-file src="src/android/CashDrawerController2.java" target-dir="src/de/paystory/thermal_printer" />
+        <source-file src="src/android/IminSDKManager.java" target-dir="src/de/paystory/thermal_printer" />
+        <source-file src="src/android/SerialCommunication.java" target-dir="src/de/paystory/thermal_printer" />
+        <source-file src="src/android/SerialPort.java" target-dir="src/de/paystory/thermal_printer" />
+        <source-file src="src/android/ThermalPrinterCordovaPlugin2.java" target-dir="src/de/paystory/thermal_printer" /> 
+        <source-file src="src/android/b.java" target-dir="src/de/paystory/thermal_printer" /> 
         <framework src="src/android/build.gradle" custom="true" type="gradleReference" />
         <lib-file src="src/libs/IminLibs1.0.15.jar" target="libs/IminLibs1.0.15.jar" />
     </platform>
